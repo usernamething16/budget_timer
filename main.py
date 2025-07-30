@@ -1,13 +1,28 @@
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, Gdk
 
 class TimerApp(Gtk.Window):
     def __init__(self):
+        #Setting title
         super().__init__(title="Simple Timer")
+
+        # Importing CSS
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_path("style.css")
+
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+
+        # Setting windows and borders
         self.set_default_size(300, 300)
         self.set_border_width(10)
 
+        # Makes it possible to close app
         self.connect("destroy", Gtk.main_quit)
 
         # Vertical box
@@ -20,7 +35,8 @@ class TimerApp(Gtk.Window):
         vbox.pack_start(self.entry, False, False, 0)
 
         # Countdown label
-        self.label = Gtk.Label(label="Timer: --")
+        self.label = Gtk.Label(label="-- | --")
+        self.label.get_style_context().add_class("time_label")
         vbox.pack_start(self.label, False, False, 0)
 
         # Start button
