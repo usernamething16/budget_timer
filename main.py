@@ -120,6 +120,9 @@ class TimerApp(Gtk.Window):
         self.started = False
 
     def on_start_clicked(self, button):
+        if self.remaining <= 0: 
+            self.on_restart_clicked(None)
+            return
         if self.started == False: 
             self.starter_time = self.remaining
             self.started = True
@@ -134,7 +137,7 @@ class TimerApp(Gtk.Window):
             self.compute_time(False)
 
             # deletes previous instance of timer
-            if self.timer_id:
+            if self.timer_id and self.remaining > 0:
                 GLib.source_remove(self.timer_id)
                 self.timer_id = None
 
@@ -144,7 +147,7 @@ class TimerApp(Gtk.Window):
     def on_restart_clicked(self, button):
         if self.started == True:
             self.button.set_image(Gtk.Image.new_from_file("gfx/play.png"))
-            if self.timer_id:
+            if self.timer_id and self.remaining > 0:
                 GLib.source_remove(self.timer_id)
                 self.timer_id = None
             self.remaining = self.starter_time
