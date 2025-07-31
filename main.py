@@ -33,8 +33,6 @@ class TimerApp(Gtk.Window):
         # boxes
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         h_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        h_up_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        h_down_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.add(vbox)
 
         # Countdown labels
@@ -43,27 +41,49 @@ class TimerApp(Gtk.Window):
 
         # buttons
 
-        self.button = Gtk.Button(label="Start")
+        self.button = Gtk.Button()
         self.button.connect("clicked", self.on_start_clicked)
+        self.button.get_style_context().add_class("pause_button")
+        self.button.set_image(Gtk.Image.new_from_file("gfx/play.png"))
+        #self.button.set_always_show_image(True)
+
         h_btn_box.pack_start(self.button, False, False, 0)
 
-        self.btn_restart = Gtk.Button(label="Restart")
+        self.btn_restart = Gtk.Button()
         self.btn_restart.connect("clicked", self.on_restart_clicked)
+        self.btn_restart.get_style_context().add_class("pause_button")
+        self.btn_restart.set_image(Gtk.Image.new_from_file("gfx/restart.png"))
         h_btn_box.pack_start(self.btn_restart, False, False, 0)
 
         # up buttons
-        self.up_hour = Gtk.Button(label="A")
-        self.up_min = Gtk.Button(label="A")
-        self.up_sec = Gtk.Button(label="A")
+        self.up_hour = Gtk.Button()
+        self.up_hour.get_style_context().add_class("transparent_button")
+        self.up_hour.set_image(Gtk.Image.new_from_file("gfx/up.png"))
+
+        self.up_min = Gtk.Button()
+        self.up_min.get_style_context().add_class("transparent_button")
+        self.up_min.set_image(Gtk.Image.new_from_file("gfx/up.png"))
+
+        self.up_sec = Gtk.Button()
+        self.up_sec.get_style_context().add_class("transparent_button")
+        self.up_sec.set_image(Gtk.Image.new_from_file("gfx/up.png"))
 
         self.up_hour.connect("clicked", self.adjust_time, "hour", 1)
         self.up_min.connect("clicked", self.adjust_time, "min", 1)
         self.up_sec.connect("clicked", self.adjust_time, "sec", 1)
         
         # down buttons
-        self.down_hour = Gtk.Button(label="V")
-        self.down_min = Gtk.Button(label="V")
-        self.down_sec = Gtk.Button(label="V")
+        self.down_hour = Gtk.Button()
+        self.down_hour.get_style_context().add_class("transparent_button")
+        self.down_hour.set_image(Gtk.Image.new_from_file("gfx/down.png"))
+
+        self.down_min = Gtk.Button()
+        self.down_min.get_style_context().add_class("transparent_button")
+        self.down_min.set_image(Gtk.Image.new_from_file("gfx/down.png"))
+
+        self.down_sec = Gtk.Button()
+        self.down_sec.get_style_context().add_class("transparent_button")
+        self.down_sec.set_image(Gtk.Image.new_from_file("gfx/down.png"))
 
         self.down_hour.connect("clicked", self.adjust_time, "hour", -1)
         self.down_min.connect("clicked", self.adjust_time, "min", -1)
@@ -71,8 +91,8 @@ class TimerApp(Gtk.Window):
 
         # arrow boxes
 
-        arr_up = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=40)
-        arr_down = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=40)
+        arr_up = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=50)
+        arr_down = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=50)
 
         arr_up.pack_start(self.up_hour, False, False, 0)
         arr_up.pack_start(self.up_min, False, False, 0)
@@ -106,8 +126,10 @@ class TimerApp(Gtk.Window):
             self.toggle_arrows(True)
 
         if self.paused == False: 
+            self.button.set_image(Gtk.Image.new_from_file("gfx/play.png"))
             self.paused = True
         else:
+            self.button.set_image(Gtk.Image.new_from_file("gfx/pause.png"))
             self.paused = False
             self.compute_time(False)
 
@@ -120,14 +142,16 @@ class TimerApp(Gtk.Window):
             self.timer_id = GLib.timeout_add(1000, self.update_timer)
 
     def on_restart_clicked(self, button):
-        if self.timer_id:
-            GLib.source_remove(self.timer_id)
-            self.timer_id = None
-        self.remaining = self.starter_time
-        self.started = False
-        self.paused = True
-        self.toggle_arrows(False)
-        self.compute_time(True)
+        if self.started == True:
+            self.button.set_image(Gtk.Image.new_from_file("gfx/play.png"))
+            if self.timer_id:
+                GLib.source_remove(self.timer_id)
+                self.timer_id = None
+            self.remaining = self.starter_time
+            self.started = False
+            self.paused = True
+            self.toggle_arrows(False)
+            self.compute_time(True)
 
     def update_timer(self):
         if self.paused == False: self.remaining -= 1

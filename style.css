@@ -3,3 +3,21 @@ label.time_label {
     font-weight: bold;
     color: #ffffff;
 }
+
+.pause_button {
+    background: #3e4144;
+    border-radius: 4px;
+    padding: 3px;
+}
+
+.pause_button:hover {
+    background: #ffffff;
+}
+
+.transparent_button {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    outline: none;
+}
