@@ -48,23 +48,24 @@ class TimerApp(Gtk.Window):
         self.draw_area.set_size_request(self.ax, self.ax)
 
         overlay.add(self.draw_area)
-        overlay.add_overlay(vbox)
 
         vbox.set_halign(Gtk.Align.CENTER)
         vbox.set_valign(Gtk.Align.CENTER)
-        vbox.set_margin_top(55)
+        vbox.set_margin_top(65)
 
         # Countdown labels
         self.label = Gtk.Label(label="00 : 00 : 00")
         self.label.get_style_context().add_class("time_label")
+        self.label.set_vexpand(False)
+        self.label.set_hexpand(False)
+
 
         # buttons
-
+        
         self.button = Gtk.Button()
         self.button.connect("clicked", self.on_start_clicked)
         self.button.get_style_context().add_class("pause_button")
         self.button.set_image(Gtk.Image.new_from_file("gfx/play.png"))
-        #self.button.set_always_show_image(True)
 
         h_btn_box.pack_start(self.button, False, False, 0)
 
@@ -122,9 +123,16 @@ class TimerApp(Gtk.Window):
         arr_down.pack_start(self.down_sec, False, False, 0)
 
         # packing stuff into vbox
+        overlay.add_overlay(self.label)
+        overlay.add_overlay(vbox)
+
+        spacer = Gtk.Box()
+
         vbox.pack_start(arr_up, False, False, 0)
         arr_up.set_halign(Gtk.Align.CENTER)
-        vbox.pack_start(self.label, False, False, 0)
+        
+        vbox.pack_start(spacer, True, True, 15)
+
         vbox.pack_start(arr_down, False, False, 0)
         arr_down.set_halign(Gtk.Align.CENTER)
         vbox.pack_start(h_btn_box, False, False, 0)
@@ -139,6 +147,7 @@ class TimerApp(Gtk.Window):
         self.circle_visible = False
 
     def on_start_clicked(self, button):
+        self.check_font_size()
         self.circle_visible = True
         self.draw_area.queue_draw()
         if self.sound_mixer: self.sound_mixer.stop()
@@ -173,6 +182,7 @@ class TimerApp(Gtk.Window):
             if self.timer_id and self.remaining > 0:
                 GLib.source_remove(self.timer_id)
                 self.timer_id = None
+            self.adjust_font(32)
             self.circle_visible = False
             self.draw_area.queue_draw()
             self.remaining = self.starter_time
@@ -184,6 +194,7 @@ class TimerApp(Gtk.Window):
     def update_timer(self):
         if self.paused == False: 
             self.remaining -= 1
+            self.check_font_size()
             self.draw_area.queue_draw()
         
         if self.remaining > 0:
@@ -193,6 +204,7 @@ class TimerApp(Gtk.Window):
             self.label.set_text("DONE")
             self.play_alarm()
             return False
+        
         
     def on_draw(self, widget, cr):
         width = self.ax
@@ -288,6 +300,19 @@ class TimerApp(Gtk.Window):
 
             self.up_sec.set_sensitive(True)
             self.up_sec.set_opacity(1)
+
+    def adjust_font(self, pt):
+        css = f"label.time_label {{ font-size: {pt}pt;}}"
+
+        provider = Gtk.CssProvider()
+        provider.load_from_data(css)
+
+        self.label.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+
+    def check_font_size(self):
+        if self.remaining < 3600:
+            if self.remaining < 60: self.adjust_font(72)
+            else: self.adjust_font(48)
 
 if __name__ == "__main__":
     win = TimerApp()
