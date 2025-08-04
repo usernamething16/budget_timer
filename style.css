@@ -1,13 +1,11 @@
 label.time_label {
     font-size: 32pt;
     font-weight: bold;
-    color: #ffffff;
+    color: rgba(255, 255, 255, 1);
 }
 
 .pause_button {
     background: #3e4144;
-    border-radius: 4px;
-    padding: 3px;
 }
 
 .pause_button:hover {
@@ -20,4 +18,8 @@ label.time_label {
     box-shadow: none;
     padding: 0;
     outline: none;
+}
+
+.window {
+    background-color: #2a2d30;
 }

@@ -61,7 +61,6 @@ class TimerApp(Gtk.Window):
 
 
         # buttons
-        
         self.button = Gtk.Button()
         self.button.connect("clicked", self.on_start_clicked)
         self.button.get_style_context().add_class("pause_button")
@@ -146,14 +145,21 @@ class TimerApp(Gtk.Window):
         self.started = False
         self.circle_visible = False
 
+        self.hour = 0
+        self.minute = 0
+        self.second = 0
+        self.milisec = 0
+
+        self.r = 1
+        self.g = 1
+        self.b = 0.2
+
     def on_start_clicked(self, button):
-        self.check_font_size()
-        self.circle_visible = True
-        self.draw_area.queue_draw()
-        if self.sound_mixer: self.sound_mixer.stop()
         if self.remaining <= 0: 
-            self.on_restart_clicked(None)
             return
+        self.circle_visible = True
+        if self.sound_mixer: self.sound_mixer.stop()
+        self.draw_area.queue_draw()
         if self.started == False: 
             self.starter_time = self.remaining
             self.started = True
@@ -173,7 +179,7 @@ class TimerApp(Gtk.Window):
                 self.timer_id = None
 
             # Calls update every second
-            self.timer_id = GLib.timeout_add(1000, self.update_timer)
+            self.timer_id = GLib.timeout_add(10, self.update_timer)
 
     def on_restart_clicked(self, button):
         if self.sound_mixer: self.sound_mixer.stop()
@@ -194,7 +200,6 @@ class TimerApp(Gtk.Window):
     def update_timer(self):
         if self.paused == False: 
             self.remaining -= 1
-            self.check_font_size()
             self.draw_area.queue_draw()
         
         if self.remaining > 0:
@@ -219,35 +224,41 @@ class TimerApp(Gtk.Window):
         cr.arc(center_x, center_y, radius, 0, 2 * math.pi)
         cr.stroke()
 
-        cr.set_source_rgb(0.2, 0.8, 0.4) 
         cr.set_line_width(25)
-        if self.circle_visible: angle = 2 * math.pi * (1 - self.remaining / self.starter_time)
+        if self.circle_visible: 
+            progress = 1 - self.remaining / self.starter_time
+            self.determine_color(progress)
+            cr.set_source_rgb(self.r, self.g, self.b) 
+            angle = 2 * math.pi * (progress)
+            cr.arc(center_x, center_y, radius, -math.pi * 0.5, math.pi * 1.5 - angle)
+            cr.stroke()
         else: angle = 2 * math.pi
-        cr.arc(center_x, center_y, radius, -math.pi * 0.5, math.pi * 1.5 - angle)
-        cr.stroke()
+        self.adjust_font_color()
+        
 
     def compute_time(self, initial):
         timer_time = ''
-        hour = self.remaining // 3600
-        minute = 0
-        second = 0
-        rest = self.remaining % 3600
-        if(rest < 60):
-            minute = 0
-            second = rest
-        else:
-            minute = rest // 60
-            second = rest % 60
+        
+        self.hour = self.remaining // 360000
+        self.minute = self.remaining // 6000
+        self.second = self.remaining // 100
 
-        if hour > 0: timer_time += f"{hour:02} : "
+        self.minute -= self.hour * 60
+        self.second -= self.minute * 60 + self.hour * 3600
+        self.milisec = self.remaining % 100
+
+        if self.hour > 0: timer_time += f"{self.hour:02} : "
         elif initial: timer_time += "00 : "
 
-        if minute > 0: timer_time += f"{minute:02} : "
-        elif hour != 0 or initial: timer_time += "00 : "
+        if self.minute > 0: timer_time += f"{self.minute:02} : "
+        elif self.hour != 0 or initial: timer_time += "00 : "
 
-        timer_time += f"{second:02}"
+
+        if self.minute == 0 and self.hour == 0 and initial == False: timer_time += f"{self.second:02} . {self.milisec:02}"
+        else: timer_time += f"{self.second:02}"
 
         self.label.set_text(timer_time)
+        if self.paused == False: self.check_font_size()
 
     def play_alarm(self):
         try:
@@ -258,9 +269,17 @@ class TimerApp(Gtk.Window):
 
     def adjust_time(self, button, unit, amount):
         match unit:
-            case "hour": self.remaining += amount * 3600
-            case "min": self.remaining += amount * 60
-            case "sec": self.remaining += amount
+            case "hour": 
+                if amount < 0 and self.hour == 0: self.remaining += 99 * 360000 
+                else: self.remaining += amount * 360000
+            case "min": 
+                if amount < 0 and self.minute == 0: self.remaining += 59 * 6000 
+                elif amount > 0 and self.minute == 59: self.remaining -= 59 * 6000
+                else: self.remaining += amount * 6000
+            case "sec": 
+                if amount < 0 and self.second == 0: self.remaining += 59 * 100 
+                elif amount > 0 and self.second == 59: self.remaining -= 59 * 100
+                else: self.remaining += amount * 100
         self.compute_time(True)
 
     def toggle_arrows(self, command):
@@ -310,9 +329,24 @@ class TimerApp(Gtk.Window):
         self.label.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
     def check_font_size(self):
-        if self.remaining < 3600:
-            if self.remaining < 60: self.adjust_font(72)
-            else: self.adjust_font(48)
+        if self.remaining < 360000:
+            self.adjust_font(48)
+
+    def determine_color(self, progress):
+        if(progress < 0.5):
+            self.r = progress * 2
+            self.g = 1
+        else: 
+            self.g = (1 - progress) * 2
+            self.r = 1
+
+    def adjust_font_color(self):
+        if self.circle_visible: css = f"label.time_label {{ color: rgba({math.floor(self.r * 255)}, {math.floor(self.g * 255)}, {math.floor(self.b * 255)}, 1);}}"
+        else: css = "label.time_label {color: rgba(255, 255, 255, 1);}"
+        provider = Gtk.CssProvider()
+        provider.load_from_data(css)
+
+        self.label.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
 if __name__ == "__main__":
     win = TimerApp()
