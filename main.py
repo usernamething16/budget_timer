@@ -1,7 +1,9 @@
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib, Gdk
+from gi.repository import Gtk, GLib, Gdk, GObject
 import pygame
+import cairo
+import math
 
 class TimerApp(Gtk.Window):
     def __init__(self):
@@ -25,16 +27,32 @@ class TimerApp(Gtk.Window):
 
 
         # Setting windows and borders
+        self.ax = 350
         self.set_default_size(300, 300)
         self.set_border_width(10)
 
         # Makes it possible to close app
         self.connect("destroy", Gtk.main_quit)
 
+        # overlay
+        overlay = Gtk.Overlay()
+
         # boxes
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         h_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        self.add(vbox)
+        self.add(overlay)
+
+        # drawing area
+        self.draw_area = Gtk.DrawingArea()
+        self.draw_area.connect("draw", self.on_draw)
+        self.draw_area.set_size_request(self.ax, self.ax)
+
+        overlay.add(self.draw_area)
+        overlay.add_overlay(vbox)
+
+        vbox.set_halign(Gtk.Align.CENTER)
+        vbox.set_valign(Gtk.Align.CENTER)
+        vbox.set_margin_top(55)
 
         # Countdown labels
         self.label = Gtk.Label(label="00 : 00 : 00")
@@ -111,16 +129,18 @@ class TimerApp(Gtk.Window):
         arr_down.set_halign(Gtk.Align.CENTER)
         vbox.pack_start(h_btn_box, False, False, 0)
         h_btn_box.set_halign(Gtk.Align.CENTER)
-        
 
         # Variables
-        self.starter_time = 0
+        self.starter_time = 1
         self.remaining = 0
         self.timer_id = None
         self.paused = True
         self.started = False
+        self.circle_visible = False
 
     def on_start_clicked(self, button):
+        self.circle_visible = True
+        self.draw_area.queue_draw()
         if self.sound_mixer: self.sound_mixer.stop()
         if self.remaining <= 0: 
             self.on_restart_clicked(None)
@@ -153,6 +173,8 @@ class TimerApp(Gtk.Window):
             if self.timer_id and self.remaining > 0:
                 GLib.source_remove(self.timer_id)
                 self.timer_id = None
+            self.circle_visible = False
+            self.draw_area.queue_draw()
             self.remaining = self.starter_time
             self.started = False
             self.paused = True
@@ -160,7 +182,9 @@ class TimerApp(Gtk.Window):
             self.compute_time(True)
 
     def update_timer(self):
-        if self.paused == False: self.remaining -= 1
+        if self.paused == False: 
+            self.remaining -= 1
+            self.draw_area.queue_draw()
         
         if self.remaining > 0:
             self.compute_time(False)
@@ -170,6 +194,26 @@ class TimerApp(Gtk.Window):
             self.play_alarm()
             return False
         
+    def on_draw(self, widget, cr):
+        width = self.ax
+        height = self.ax
+
+        radius = min(width, height) / 2 - 20
+        center_x = widget.get_allocated_width() / 2
+        center_y = widget.get_allocated_height() / 2
+
+        cr.set_line_width(25)
+        cr.set_source_rgba(0.3, 0.3, 0.3, 0.2)
+        cr.arc(center_x, center_y, radius, 0, 2 * math.pi)
+        cr.stroke()
+
+        cr.set_source_rgb(0.2, 0.8, 0.4) 
+        cr.set_line_width(25)
+        if self.circle_visible: angle = 2 * math.pi * (1 - self.remaining / self.starter_time)
+        else: angle = 2 * math.pi
+        cr.arc(center_x, center_y, radius, -math.pi * 0.5, math.pi * 1.5 - angle)
+        cr.stroke()
+
     def compute_time(self, initial):
         timer_time = ''
         hour = self.remaining // 3600
