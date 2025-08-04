@@ -11,6 +11,7 @@ class TimerApp(Gtk.Window):
         # pygame init
         pygame.init()
         pygame.mixer.init()
+        self.sound_mixer = None
 
         # Importing CSS
         css_provider = Gtk.CssProvider()
@@ -120,6 +121,7 @@ class TimerApp(Gtk.Window):
         self.started = False
 
     def on_start_clicked(self, button):
+        if self.sound_mixer: self.sound_mixer.stop()
         if self.remaining <= 0: 
             self.on_restart_clicked(None)
             return
@@ -145,6 +147,7 @@ class TimerApp(Gtk.Window):
             self.timer_id = GLib.timeout_add(1000, self.update_timer)
 
     def on_restart_clicked(self, button):
+        if self.sound_mixer: self.sound_mixer.stop()
         if self.started == True:
             self.button.set_image(Gtk.Image.new_from_file("gfx/play.png"))
             if self.timer_id and self.remaining > 0:
@@ -193,7 +196,7 @@ class TimerApp(Gtk.Window):
     def play_alarm(self):
         try:
             sound = pygame.mixer.Sound("ralsei-splat.mp3")
-            sound.play()
+            self.sound_mixer = sound.play(loops=-1)
         except pygame.error as e:
             print(f"Error playing sound: {e}")
 
