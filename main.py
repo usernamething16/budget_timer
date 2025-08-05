@@ -24,6 +24,11 @@ class TimerApp(Gtk.Window):
             css_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
+        super().get_style_context().add_class("window")
+
+        self.provider_label = Gtk.CssProvider()
+        self.provider_label_font = Gtk.CssProvider()
+        self.provider_button = Gtk.CssProvider()
 
 
         # Setting windows and borders
@@ -168,6 +173,9 @@ class TimerApp(Gtk.Window):
         if self.paused == False: 
             self.button.set_image(Gtk.Image.new_from_file("gfx/play.png"))
             self.paused = True
+            if self.timer_id and self.remaining > 0:
+                GLib.source_remove(self.timer_id)
+                self.timer_id = None
         else:
             self.button.set_image(Gtk.Image.new_from_file("gfx/pause.png"))
             self.paused = False
@@ -200,7 +208,7 @@ class TimerApp(Gtk.Window):
     def update_timer(self):
         if self.paused == False: 
             self.remaining -= 1
-            self.draw_area.queue_draw()
+            #if self.remaining % 10 == 0:self.draw_area.queue_draw()
         
         if self.remaining > 0:
             self.compute_time(False)
@@ -219,12 +227,16 @@ class TimerApp(Gtk.Window):
         center_x = widget.get_allocated_width() / 2
         center_y = widget.get_allocated_height() / 2
 
+        cr.set_source_rgb(0.165, 0.176, 0.184)  # Set to your background color
+        cr.rectangle(0, 0, width, height)
+        cr.fill()
+
         cr.set_line_width(25)
         cr.set_source_rgba(0.3, 0.3, 0.3, 0.2)
         cr.arc(center_x, center_y, radius, 0, 2 * math.pi)
         cr.stroke()
 
-        cr.set_line_width(25)
+        cr.set_line_cap(cairo.LINE_CAP_ROUND)
         if self.circle_visible: 
             progress = 1 - self.remaining / self.starter_time
             self.determine_color(progress)
@@ -234,6 +246,8 @@ class TimerApp(Gtk.Window):
             cr.stroke()
         else: angle = 2 * math.pi
         self.adjust_font_color()
+
+        return False
         
 
     def compute_time(self, initial):
@@ -323,10 +337,9 @@ class TimerApp(Gtk.Window):
     def adjust_font(self, pt):
         css = f"label.time_label {{ font-size: {pt}pt;}}"
 
-        provider = Gtk.CssProvider()
-        provider.load_from_data(css)
+        self.provider_label_font.load_from_data(css)
 
-        self.label.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+        self.label.get_style_context().add_provider(self.provider_label_font, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
     def check_font_size(self):
         if self.remaining < 360000:
@@ -341,12 +354,18 @@ class TimerApp(Gtk.Window):
             self.r = 1
 
     def adjust_font_color(self):
-        if self.circle_visible: css = f"label.time_label {{ color: rgba({math.floor(self.r * 255)}, {math.floor(self.g * 255)}, {math.floor(self.b * 255)}, 1);}}"
-        else: css = "label.time_label {color: rgba(255, 255, 255, 1);}"
-        provider = Gtk.CssProvider()
-        provider.load_from_data(css)
+        if self.circle_visible: 
+            css_label = f"label.time_label {{ color: rgb({math.floor(self.r * 255)}, {math.floor(self.g * 255)}, {math.floor(self.b * 255)});}}"
+            css_button = f".pause_button:hover {{ background: rgb({math.floor(self.r * 255)}, {math.floor(self.g * 255)}, {math.floor(self.b * 255)});}}"
+        else: 
+            css_label = "label.time_label {color: rgb(255, 255, 255);}"
+            css_button = ".pause_button:hover {background: rgb(255, 255, 255);}"
+        self.provider_label.load_from_data(css_label)
+        self.label.get_style_context().add_provider(self.provider_label, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
-        self.label.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+        self.provider_button.load_from_data(css_button)
+        self.button.get_style_context().add_provider(self.provider_button, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+        self.btn_restart.get_style_context().add_provider(self.provider_button, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
 if __name__ == "__main__":
     win = TimerApp()
