@@ -6,9 +6,10 @@ import cairo
 import math
 
 class TimerApp(Gtk.Box):
-    def __init__(self):
+    def __init__(self, flowbox):
         # setting orientation
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        self.flowbox = flowbox
 
         # pygame init
         pygame.init()
@@ -100,7 +101,6 @@ class TimerApp(Gtk.Box):
         self.down_sec.connect("clicked", self.adjust_time, "sec", -1)
 
         # arrow boxes
-
         arr_up = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=50)
         arr_down = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=50)
 
@@ -112,8 +112,20 @@ class TimerApp(Gtk.Box):
         arr_down.pack_start(self.down_min, False, False, 0)
         arr_down.pack_start(self.down_sec, False, False, 0)
 
+        # delete button
+        self.del_btn = Gtk.Button(label="X")
+        self.del_btn.connect("clicked", self.terminate)
+        self.del_btn.get_style_context().add_class("delete_button")
+
+        self.del_btn.set_halign(Gtk.Align.END)
+        self.del_btn.set_valign(Gtk.Align.START)
+        self.del_btn.set_margin_top(5)
+        self.del_btn.set_margin_end(5)
+
+
         # packing stuff into vbox
         overlay.add_overlay(self.label)
+        overlay.add_overlay(self.del_btn)
         overlay.add_overlay(vbox)
 
         spacer = Gtk.Box()
@@ -135,6 +147,8 @@ class TimerApp(Gtk.Box):
         self.paused = True
         self.started = False
         self.circle_visible = False
+
+        self.tick = 33
 
         self.hour = 0
         self.minute = 0
@@ -173,7 +187,7 @@ class TimerApp(Gtk.Box):
                 self.timer_id = None
 
             # Calls update every second
-            self.timer_id = GLib.timeout_add(10, self.update_timer)
+            self.timer_id = GLib.timeout_add(self.tick, self.update_timer)
 
     def on_restart_clicked(self, button):
         if self.sound_mixer: self.sound_mixer.stop()
@@ -193,15 +207,18 @@ class TimerApp(Gtk.Box):
 
     def update_timer(self):
         if self.paused == False: 
-            self.remaining -= 1
-            #if self.remaining % 10 == 0:self.draw_area.queue_draw()
+            self.remaining -= self.tick
         
         if self.remaining > 0:
             self.compute_time(False)
             return True
         else: 
             self.label.set_text("DONE")
+            self.remaining = -1
             self.play_alarm()
+            if self.timer_id:
+                GLib.source_remove(self.timer_id)
+                self.timer_id = None
             return False
         
         
@@ -212,10 +229,6 @@ class TimerApp(Gtk.Box):
         radius = min(width, height) / 2 - 20
         center_x = widget.get_allocated_width() / 2
         center_y = widget.get_allocated_height() / 2
-
-        #cr.set_source_rgb(0.165, 0.176, 0.184)  # Set to your background color
-        #cr.rectangle(0, 0, width, height)
-        #cr.fill()
 
         cr.set_line_width(25)
         cr.set_source_rgba(0.3, 0.3, 0.3, 0.2)
@@ -239,13 +252,13 @@ class TimerApp(Gtk.Box):
     def compute_time(self, initial):
         timer_time = ''
         
-        self.hour = self.remaining // 360000
-        self.minute = self.remaining // 6000
-        self.second = self.remaining // 100
+        self.hour = self.remaining // 3600000
+        self.minute = self.remaining // 60000
+        self.second = self.remaining // 1000
 
         self.minute -= self.hour * 60
         self.second -= self.minute * 60 + self.hour * 3600
-        self.milisec = self.remaining % 100
+        self.milisec = self.remaining % 1000 // 10
 
         if self.hour > 0: timer_time += f"{self.hour:02} : "
         elif initial: timer_time += "00 : "
@@ -270,16 +283,17 @@ class TimerApp(Gtk.Box):
     def adjust_time(self, button, unit, amount):
         match unit:
             case "hour": 
-                if amount < 0 and self.hour == 0: self.remaining += 99 * 360000 
-                else: self.remaining += amount * 360000
+                if amount < 0 and self.hour == 0: self.remaining += 99 * 3600000
+                elif amount > 0 and self.hour == 99: self.remaining -= 99 * 3600000
+                else: self.remaining += amount * 3600000
             case "min": 
-                if amount < 0 and self.minute == 0: self.remaining += 59 * 6000 
-                elif amount > 0 and self.minute == 59: self.remaining -= 59 * 6000
-                else: self.remaining += amount * 6000
+                if amount < 0 and self.minute == 0: self.remaining += 59 * 60000
+                elif amount > 0 and self.minute == 59: self.remaining -= 59 * 60000
+                else: self.remaining += amount * 60000
             case "sec": 
-                if amount < 0 and self.second == 0: self.remaining += 59 * 100 
-                elif amount > 0 and self.second == 59: self.remaining -= 59 * 100
-                else: self.remaining += amount * 100
+                if amount < 0 and self.second == 0: self.remaining += 59 * 1000
+                elif amount > 0 and self.second == 59: self.remaining -= 59 * 1000
+                else: self.remaining += amount * 1000
         self.compute_time(True)
 
     def toggle_arrows(self, command):
@@ -328,7 +342,7 @@ class TimerApp(Gtk.Box):
         self.label.get_style_context().add_provider(self.provider_label_font, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
     def check_font_size(self):
-        if self.remaining < 360000:
+        if self.remaining < 3600000:
             self.adjust_font(48)
 
     def determine_color(self, progress):
@@ -353,12 +367,19 @@ class TimerApp(Gtk.Box):
         self.button.get_style_context().add_provider(self.provider_button, Gtk.STYLE_PROVIDER_PRIORITY_USER)
         self.btn_restart.get_style_context().add_provider(self.provider_button, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
+    def terminate(self, button):
+        self.sound_mixer.stop()
+        if self.timer_id and self.remaining > 0:
+                GLib.source_remove(self.timer_id)
+                self.timer_id = None
+        self.flowbox.remove(self)
+
 class MainApp(Gtk.Window):
     def __init__(self):
         # initialising window
         super().__init__(title="Simple Timer")
         self.set_default_size(800, 400)
-        self.set_border_width(10)
+        self.set_border_width(0)
 
         # importing css
         css_provider = Gtk.CssProvider()
@@ -372,15 +393,21 @@ class MainApp(Gtk.Window):
         super().get_style_context().add_class("window")
 
         # box
-        self.hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        self.add(self.hbox)
+        self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.vbox.set_margin_start(10)
+        self.vbox.set_margin_end(10)
+        self.add(self.vbox)
+
+        scroll_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        scroll_box.set_margin_top(10)
+        scroll_box.set_margin_bottom(10)
+
 
         # flowbox
         self.timer_container = Gtk.FlowBox()
         self.timer_container.set_valign(Gtk.Align.START)
         self.timer_container.set_halign(Gtk.Align.FILL)
         self.timer_container.set_max_children_per_line(25)
-        #self.timer_container.set_min_children_per_line(1)
         self.timer_container.set_selection_mode(Gtk.SelectionMode.NONE)
         self.timer_container.set_row_spacing(10)
         self.timer_container.set_column_spacing(10)
@@ -390,6 +417,9 @@ class MainApp(Gtk.Window):
         # scroll
         scroll = Gtk.ScrolledWindow()
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_shadow_type(Gtk.ShadowType.NONE)
+        scroll.get_style_context().add_class("scroll_timers")
+        scroll.set_kinetic_scrolling(False)
         scroll.set_hexpand(True)
         scroll.set_vexpand(True)
 
@@ -402,30 +432,27 @@ class MainApp(Gtk.Window):
         
 
         # packing
-        self.hbox.pack_start(scroll, True, True, 0)
-        scroll.add(self.timer_container)
+        self.vbox.pack_start(scroll, True, True, 0)
+        scroll.add(scroll_box)
+        scroll_box.pack_start(self.timer_container, True, True, 0)
 
         self.timer_container.add(self.add_btn)
 
     
     def add_timer(self, button):
-        timer = TimerApp()
+        timer = TimerApp(self.timer_container)
 
         timer.set_valign(Gtk.Align.START)
         timer.set_valign(Gtk.Align.START)
         timer.get_style_context().add_class("box_background")
 
-        index = 0
         children = self.timer_container.get_children()
-        for i, child in enumerate(children): 
-            if child.get_name() == "add_btn":
-                index = i
-                break
+        index = len(children) - 1
+
         self.timer_container.insert(timer, index)
 
         timer.show_all()
         super().show_all()
-        
 
 if __name__ == "__main__":
     win = MainApp()

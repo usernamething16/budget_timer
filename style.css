@@ -2,14 +2,26 @@ label.time_label {
     font-size: 32pt;
     font-weight: bold;
     color: rgb(255, 255, 255);
+    outline: none;
+    box-shadow: none;
 }
 
 .pause_button {
     background: #3e4144;
+    outline: none;
+    box-shadow: none;
 }
 
 .pause_button:hover {
     background: #ffffff;
+}
+
+.delete_button {
+    background: #3e4144;
+    border-radius: 16px;
+    font-size: 16pt;
+    outline: none;
+    box-shadow: none;
 }
 
 .transparent_button {
@@ -22,6 +34,8 @@ label.time_label {
 
 .window {
     background-color: #242729;
+    outline: none;
+    box-shadow: none;
 }
 
 .box_background {
@@ -29,6 +43,8 @@ label.time_label {
     border-radius: 30px;
     padding: 8px;
     font-size: 125pt;
+    outline: none;
+    box-shadow: none;
 }
 
 .box_button {
@@ -38,8 +54,43 @@ label.time_label {
     font-size: 125pt;
     font-family: serif;
     border: hidden;
+    outline: none;
+    box-shadow: none;
 }
 
 .box_button:active {
     background-color: #313638;
+}
+
+.scroll_timers {
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+    background-color: transparent;
+}
+
+.scroll_timers:focus {
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+    background-color: transparent;
+}
+
+scrolledwindow, 
+scrolledwindow undershoot,
+undershoot.top,
+undershoot.bottom,
+undershoot.left,
+undershoot.right,
+overshoot,
+overshoot.top,
+overshoot.bottom,
+overshoot.left,
+overshoot.right {
+    outline: none;
+    box-shadow: none;
+    border: none;
+    background-color: transparent;
+    background-image: none;
+    animation-play-state: paused;
 }
