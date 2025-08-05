@@ -80,8 +80,16 @@ class TimerApp(Gtk.Box):
         self.up_sec.set_image(Gtk.Image.new_from_file("gfx/up.png"))
 
         self.up_hour.connect("clicked", self.adjust_time, "hour", 1)
+        self.up_hour.connect("pressed", self.button_pressed, "hour", 1)
+        self.up_hour.connect("released", self.button_released, "hour", 1)
+
         self.up_min.connect("clicked", self.adjust_time, "min", 1)
+        self.up_min.connect("pressed", self.button_pressed, "min", 1)
+        self.up_min.connect("released", self.button_released, "min", 1)
+
         self.up_sec.connect("clicked", self.adjust_time, "sec", 1)
+        self.up_sec.connect("pressed", self.button_pressed, "sec", 1)
+        self.up_sec.connect("released", self.button_released, "sec", 1)
         
         # down buttons
         self.down_hour = Gtk.Button()
@@ -97,8 +105,16 @@ class TimerApp(Gtk.Box):
         self.down_sec.set_image(Gtk.Image.new_from_file("gfx/down.png"))
 
         self.down_hour.connect("clicked", self.adjust_time, "hour", -1)
+        self.down_hour.connect("pressed", self.button_pressed, "hour", -1)
+        self.down_hour.connect("released", self.button_released, "hour", -1)
+
         self.down_min.connect("clicked", self.adjust_time, "min", -1)
+        self.down_min.connect("pressed", self.button_pressed, "min", -1)
+        self.down_min.connect("released", self.button_released, "min", -1)
+
         self.down_sec.connect("clicked", self.adjust_time, "sec", -1)
+        self.down_sec.connect("pressed", self.button_pressed, "sec", -1)
+        self.down_sec.connect("released", self.button_released, "sec", -1)
 
         # arrow boxes
         arr_up = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=50)
@@ -144,6 +160,7 @@ class TimerApp(Gtk.Box):
         self.starter_time = 1
         self.remaining = 0
         self.timer_id = None
+        self.timer_id_arrows = None
         self.paused = True
         self.started = False
         self.circle_visible = False
@@ -295,6 +312,16 @@ class TimerApp(Gtk.Box):
                 elif amount > 0 and self.second == 59: self.remaining -= 59 * 1000
                 else: self.remaining += amount * 1000
         self.compute_time(True)
+        return True
+
+    def button_pressed(self, button, unit, amount):
+        if self.timer_id_arrows is None:
+            self.timer_id_arrows = GLib.timeout_add(100, self.adjust_time, button, unit, amount)
+
+    def button_released(self, button, unit, amount):
+        if self.timer_id_arrows:
+            GLib.source_remove(self.timer_id_arrows)
+            self.timer_id_arrows = None
 
     def toggle_arrows(self, command):
         if command:
