@@ -7,9 +7,14 @@ import math
 import os
 import json
 
-APP_DIR = os.path.expanduser("~/.local/share/my-timer-app")
+APP_DIR = os.path.expanduser("~/.local/share/simple-timer")
 STATE_FILE = os.path.join(APP_DIR, "save_file.json")
 os.makedirs(APP_DIR, exist_ok=True)
+
+# empty json if it doesn't exist
+if not os.path.exists(STATE_FILE):
+    with open(STATE_FILE, "w") as f:
+        json.dump({}, f)
 
 class TimerApp(Gtk.Box):
     def __init__(self, flowbox, list, starter_time, remaining, started, circle_visible):
