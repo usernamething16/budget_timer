@@ -94,3 +94,17 @@ overshoot.right {
     background-image: none;
     animation-play-state: paused;
 }
+
+flowchild {
+    border: hidden;
+    outline: none;
+    box-shadow: none;
+    background-color: transparent;
+    background-image: none;
+}
+
+* {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
