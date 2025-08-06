@@ -4,12 +4,19 @@ from gi.repository import Gtk, GLib, Gdk
 import pygame
 import cairo
 import math
+import os
+import json
+
+APP_DIR = os.path.expanduser("~/.local/share/my-timer-app")
+STATE_FILE = os.path.join(APP_DIR, "save_file.json")
+os.makedirs(APP_DIR, exist_ok=True)
 
 class TimerApp(Gtk.Box):
-    def __init__(self, flowbox):
+    def __init__(self, flowbox, list, starter_time, remaining, started, circle_visible):
         # setting orientation
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=20)
         self.flowbox = flowbox
+        self.list = list
 
         # pygame init
         pygame.init()
@@ -157,13 +164,13 @@ class TimerApp(Gtk.Box):
         h_btn_box.set_halign(Gtk.Align.CENTER)
 
         # Variables
-        self.starter_time = 1
-        self.remaining = 0
+        self.starter_time = starter_time
+        self.remaining = remaining
         self.timer_id = None
         self.timer_id_arrows = None
         self.paused = True
-        self.started = False
-        self.circle_visible = False
+        self.started = started
+        self.circle_visible = circle_visible
 
         self.tick = 33
 
@@ -175,6 +182,47 @@ class TimerApp(Gtk.Box):
         self.r = 1
         self.g = 1
         self.b = 0.25
+
+        self.on_load()
+
+    def on_load(self):
+        self.button.set_image(Gtk.Image.new_from_file("gfx/play.png"))
+        if self.remaining < 0:
+            self.on_restart_clicked(None)
+        else:
+            if self.started:
+                if self.timer_id and self.remaining > 0:
+                    GLib.source_remove(self.timer_id)
+                    self.timer_id = None
+                self.draw_area.queue_draw()
+                self.toggle_arrows(True)
+                self.compute_time(False)
+                self.check_font_size()
+            else:
+                self.adjust_font(32)
+                self.draw_area.queue_draw()
+                self.compute_time(True)
+
+
+
+    def to_dict(self):
+        return {
+            'starter_time': self.starter_time,
+            'remaining': self.remaining,
+            'started': self.started,
+            'circle_visible': self.circle_visible,
+        }
+    
+    @classmethod
+    def from_dict(cls, data, flowbox, list):
+        return cls(
+            flowbox,
+            list,
+            starter_time = data['starter_time'],
+            remaining = data['remaining'],
+            started = data['started'],
+            circle_visible = data['circle_visible']
+        )
 
     def on_start_clicked(self, button):
         if self.remaining <= 0: 
@@ -395,11 +443,13 @@ class TimerApp(Gtk.Box):
         self.btn_restart.get_style_context().add_provider(self.provider_button, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
     def terminate(self, button):
-        self.sound_mixer.stop()
-        if self.timer_id and self.remaining > 0:
+        if self.sound_mixer: self.sound_mixer.stop()
+        if self.timer_id:
                 GLib.source_remove(self.timer_id)
                 self.timer_id = None
         self.flowbox.remove(self)
+        self.list.remove(self)
+        
 
 class MainApp(Gtk.Window):
     def __init__(self):
@@ -418,6 +468,9 @@ class MainApp(Gtk.Window):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
         super().get_style_context().add_class("window")
+
+        # list of timers
+        self.timer_list = []
 
         # box
         self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -453,7 +506,7 @@ class MainApp(Gtk.Window):
         # button
         self.add_btn = Gtk.Button(label="+")
         self.add_btn.set_size_request(370, 370)
-        self.add_btn.connect("clicked", self.add_timer)
+        self.add_btn.connect("clicked", self.add_timer, None)
         self.add_btn.get_style_context().add_class("box_button")
         self.add_btn.set_name("add_btn")
         
@@ -465,9 +518,12 @@ class MainApp(Gtk.Window):
 
         self.timer_container.add(self.add_btn)
 
+        self.load_data()
+        GLib.timeout_add_seconds(10, self.save_data)
+
     
-    def add_timer(self, button):
-        timer = TimerApp(self.timer_container)
+    def add_timer(self, button, timer):
+        if timer is None: timer = TimerApp(self.timer_container, self.timer_list, 1, 0, False, False)
 
         timer.set_valign(Gtk.Align.START)
         timer.set_valign(Gtk.Align.START)
@@ -478,11 +534,30 @@ class MainApp(Gtk.Window):
 
         self.timer_container.insert(timer, index)
 
+        self.timer_list.append(timer)
+
         timer.show_all()
         super().show_all()
+
+    def save_data(self, *args):
+        data = [timer.to_dict() for timer in self.timer_list]
+
+        with open(STATE_FILE, "w") as f:
+            json.dump(data, f)
+        return True
+
+    def load_data(self):
+        with open(STATE_FILE, "r") as f:
+            data = json.load(f)
+
+        for timer_data in data:
+            timer = TimerApp.from_dict(timer_data, self.timer_container, self.timer_list)
+            self.add_timer(None, timer)
+
 
 if __name__ == "__main__":
     win = MainApp()
     win.show_all()
+    win.connect("destroy", win.save_data)
     win.connect("destroy", Gtk.main_quit)
     Gtk.main()
