@@ -10,14 +10,14 @@ label.time_label {
     background: #ffffff;
     outline: none;
     box-shadow: none;
-    padding: 4px;
+    padding: 0;
 }
 
 .pause_button:hover {
     background: transparent;
-
     background-image: none;
     transition: none;
+    -gtk-icon-effect: none;
 }
 
 .delete_button {
