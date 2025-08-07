@@ -1,13 +1,22 @@
+import sys
+sys.path.append("/usr/lib/python3/dist-packages")
+
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk
-import pygame
+from pygame import mixer
 import cairo
 import math
 import os
 import json
 
-APP_DIR = os.path.expanduser("~/.local/share/simple-timer")
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+#APP_DIR = os.path.join(BASE_DIR, "..", "share", "simple-timer")
+APP_DIR = "/usr/share/simple-timer"
 STATE_FILE = os.path.join(APP_DIR, "save_file.json")
 os.makedirs(APP_DIR, exist_ok=True)
 
@@ -24,8 +33,7 @@ class TimerApp(Gtk.Box):
         self.list = list
 
         # pygame init
-        pygame.init()
-        pygame.mixer.init()
+        mixer.init()
         self.sound_mixer = None
 
         # Importing CSS
@@ -53,7 +61,7 @@ class TimerApp(Gtk.Box):
 
         vbox.set_halign(Gtk.Align.CENTER)
         vbox.set_valign(Gtk.Align.CENTER)
-        vbox.set_margin_top(71)
+        vbox.set_margin_top(69)
 
         # Countdown labels
         self.label = Gtk.Label(label="00 : 00 : 00")
@@ -68,28 +76,29 @@ class TimerApp(Gtk.Box):
         self.button = Gtk.Button()
         self.button.connect("clicked", self.on_start_clicked)
         self.button.get_style_context().add_class("pause_button")
-        self.button.set_image(Gtk.Image.new_from_file("src/gfx/play.png"))
+        self.button.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/play.png"))
+        self.button.set_relief(Gtk.ReliefStyle.NONE)
 
         h_btn_box.pack_start(self.button, False, False, 0)
 
         self.btn_restart = Gtk.Button()
         self.btn_restart.connect("clicked", self.on_restart_clicked)
         self.btn_restart.get_style_context().add_class("pause_button")
-        self.btn_restart.set_image(Gtk.Image.new_from_file("src/gfx/restart.png"))
+        self.btn_restart.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/restart.png"))
         h_btn_box.pack_start(self.btn_restart, False, False, 0)
 
         # up buttons
         self.up_hour = Gtk.Button()
         self.up_hour.get_style_context().add_class("transparent_button")
-        self.up_hour.set_image(Gtk.Image.new_from_file("src/gfx/up.png"))
+        self.up_hour.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/up.png"))
 
         self.up_min = Gtk.Button()
         self.up_min.get_style_context().add_class("transparent_button")
-        self.up_min.set_image(Gtk.Image.new_from_file("src/gfx/up.png"))
+        self.up_min.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/up.png"))
 
         self.up_sec = Gtk.Button()
         self.up_sec.get_style_context().add_class("transparent_button")
-        self.up_sec.set_image(Gtk.Image.new_from_file("src/gfx/up.png"))
+        self.up_sec.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/up.png"))
 
         self.up_hour.connect("clicked", self.adjust_time, "hour", 1)
         self.up_hour.connect("pressed", self.button_pressed, "hour", 1)
@@ -106,15 +115,15 @@ class TimerApp(Gtk.Box):
         # down buttons
         self.down_hour = Gtk.Button()
         self.down_hour.get_style_context().add_class("transparent_button")
-        self.down_hour.set_image(Gtk.Image.new_from_file("src/gfx/down.png"))
+        self.down_hour.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/down.png"))
 
         self.down_min = Gtk.Button()
         self.down_min.get_style_context().add_class("transparent_button")
-        self.down_min.set_image(Gtk.Image.new_from_file("src/gfx/down.png"))
+        self.down_min.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/down.png"))
 
         self.down_sec = Gtk.Button()
         self.down_sec.get_style_context().add_class("transparent_button")
-        self.down_sec.set_image(Gtk.Image.new_from_file("src/gfx/down.png"))
+        self.down_sec.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/down.png"))
 
         self.down_hour.connect("clicked", self.adjust_time, "hour", -1)
         self.down_hour.connect("pressed", self.button_pressed, "hour", -1)
@@ -141,9 +150,10 @@ class TimerApp(Gtk.Box):
         arr_down.pack_start(self.down_sec, False, False, 0)
 
         # delete button
-        self.del_btn = Gtk.Button(label="X")
+        self.del_btn = Gtk.Button()
         self.del_btn.connect("clicked", self.terminate)
         self.del_btn.get_style_context().add_class("delete_button")
+        self.del_btn.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/the_x.png"))
 
         self.del_btn.set_halign(Gtk.Align.END)
         self.del_btn.set_valign(Gtk.Align.START)
@@ -191,7 +201,7 @@ class TimerApp(Gtk.Box):
         self.on_load()
 
     def on_load(self):
-        self.button.set_image(Gtk.Image.new_from_file("src/gfx/play.png"))
+        self.button.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/play.png"))
         if self.remaining < 0:
             self.on_restart_clicked(None)
         else:
@@ -241,13 +251,13 @@ class TimerApp(Gtk.Box):
             self.toggle_arrows(True)
 
         if self.paused == False: 
-            self.button.set_image(Gtk.Image.new_from_file("src/gfx/play.png"))
+            self.button.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/play.png"))
             self.paused = True
             if self.timer_id and self.remaining > 0:
                 GLib.source_remove(self.timer_id)
                 self.timer_id = None
         else:
-            self.button.set_image(Gtk.Image.new_from_file("src/gfx/pause.png"))
+            self.button.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/pause.png"))
             self.paused = False
             self.compute_time(False)
 
@@ -262,7 +272,7 @@ class TimerApp(Gtk.Box):
     def on_restart_clicked(self, button):
         if self.sound_mixer: self.sound_mixer.stop()
         if self.started == True:
-            self.button.set_image(Gtk.Image.new_from_file("src/gfx/play.png"))
+            self.button.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/assets/gfx/play.png"))
             if self.timer_id and self.remaining > 0:
                 GLib.source_remove(self.timer_id)
                 self.timer_id = None
@@ -344,11 +354,8 @@ class TimerApp(Gtk.Box):
         if self.paused == False: self.check_font_size()
 
     def play_alarm(self):
-        try:
-            sound = pygame.mixer.Sound("src/ralsei-splat.mp3")
-            self.sound_mixer = sound.play(loops=-1)
-        except pygame.error as e:
-            print(f"Error playing sound: {e}")
+        sound = mixer.Sound(f"{APP_DIR}/assets/ralsei-splat.mp3")
+        self.sound_mixer = sound.play(loops=-1)
 
     def adjust_time(self, button, unit, amount):
         match unit:
@@ -436,10 +443,10 @@ class TimerApp(Gtk.Box):
     def adjust_font_color(self):
         if self.circle_visible: 
             css_label = f"label.time_label {{ color: rgb({math.floor(self.r * 255)}, {math.floor(self.g * 255)}, {math.floor(self.b * 255)});}}"
-            css_button = f".pause_button:hover {{ background: rgb({math.floor(self.r * 255)}, {math.floor(self.g * 255)}, {math.floor(self.b * 255)});}}"
+            css_button = f".pause_button {{ background: rgb({math.floor(self.r * 255)}, {math.floor(self.g * 255)}, {math.floor(self.b * 255)});}}"
         else: 
             css_label = "label.time_label {color: rgb(255, 255, 255);}"
-            css_button = ".pause_button:hover {background: rgb(255, 255, 255);}"
+            css_button = ".pause_button {background: rgb(255, 255, 255);}"
         self.provider_label.load_from_data(css_label)
         self.label.get_style_context().add_provider(self.provider_label, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
@@ -465,7 +472,7 @@ class MainApp(Gtk.Window):
 
         # importing css
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_path("src/style.css")
+        css_provider.load_from_path(f"{APP_DIR}/assets/style.css")
 
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(),

@@ -7,19 +7,22 @@ label.time_label {
 }
 
 .pause_button {
-    background: #3e4144;
+    background: #ffffff;
     outline: none;
     box-shadow: none;
+    padding: 4px;
 }
 
 .pause_button:hover {
-    background: #ffffff;
+    background: transparent;
+
+    background-image: none;
+    transition: none;
 }
 
 .delete_button {
-    background: #3e4144;
-    border-radius: 16px;
-    font-size: 16pt;
+    background: transparent;
+    border-radius: 0;
     outline: none;
     box-shadow: none;
 }
