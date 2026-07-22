@@ -11,18 +11,21 @@ import os
 import json
 
 if getattr(sys, 'frozen', False):
+	# running as a PyInstaller build
 	BASE_DIR = os.path.dirname(sys.executable)
+	# bundled read-only files (style.css, sounds, etc.)
+	ASSETS_DIR = os.path.join(sys._MEIPASS, "assets")
+	# writable data (save file) lives next to the exe
+	DATA_DIR = os.path.join(BASE_DIR, "data")
 else:
+	# running from source (vscode)
 	BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+	ASSETS_DIR = BASE_DIR
+	DATA_DIR = BASE_DIR
 
-#for building the app
-#APP_DIR = os.path.join(BASE_DIR, "..", "share", "simple-timer", "assets")
 
-#for running it from vscode
-APP_DIR = os.path.join(BASE_DIR, "src")
-
-STATE_FILE = os.path.join(APP_DIR, "save_file.json")
-os.makedirs(APP_DIR, exist_ok=True)
+STATE_FILE = os.path.join(DATA_DIR, "save_file.json")
+os.makedirs(DATA_DIR, exist_ok=True)
 
 # empty json if it doesn't exist
 if not os.path.exists(STATE_FILE):
@@ -80,7 +83,7 @@ class TimerApp(Gtk.Box):
 		self.button = Gtk.Button()
 		self.button.connect("clicked", self.on_start_clicked)
 		self.button.get_style_context().add_class("pause_button")
-		self.button.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/play.png"))
+		self.button.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/play.png"))
 		self.button.set_relief(Gtk.ReliefStyle.NONE)
 
 		h_btn_box.pack_start(self.button, False, False, 0)
@@ -88,21 +91,21 @@ class TimerApp(Gtk.Box):
 		self.btn_restart = Gtk.Button()
 		self.btn_restart.connect("clicked", self.on_restart_clicked)
 		self.btn_restart.get_style_context().add_class("pause_button")
-		self.btn_restart.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/restart.png"))
+		self.btn_restart.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/restart.png"))
 		h_btn_box.pack_start(self.btn_restart, False, False, 0)
 
 		# up buttons
 		self.up_hour = Gtk.Button()
 		self.up_hour.get_style_context().add_class("transparent_button")
-		self.up_hour.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/up.png"))
+		self.up_hour.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/up.png"))
 
 		self.up_min = Gtk.Button()
 		self.up_min.get_style_context().add_class("transparent_button")
-		self.up_min.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/up.png"))
+		self.up_min.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/up.png"))
 
 		self.up_sec = Gtk.Button()
 		self.up_sec.get_style_context().add_class("transparent_button")
-		self.up_sec.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/up.png"))
+		self.up_sec.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/up.png"))
 
 		self.up_hour.connect("clicked", self.adjust_time, "hour", 1)
 		self.up_hour.connect("pressed", self.button_pressed, "hour", 1)
@@ -119,15 +122,15 @@ class TimerApp(Gtk.Box):
 		# down buttons
 		self.down_hour = Gtk.Button()
 		self.down_hour.get_style_context().add_class("transparent_button")
-		self.down_hour.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/down.png"))
+		self.down_hour.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/down.png"))
 
 		self.down_min = Gtk.Button()
 		self.down_min.get_style_context().add_class("transparent_button")
-		self.down_min.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/down.png"))
+		self.down_min.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/down.png"))
 
 		self.down_sec = Gtk.Button()
 		self.down_sec.get_style_context().add_class("transparent_button")
-		self.down_sec.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/down.png"))
+		self.down_sec.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/down.png"))
 
 		self.down_hour.connect("clicked", self.adjust_time, "hour", -1)
 		self.down_hour.connect("pressed", self.button_pressed, "hour", -1)
@@ -157,7 +160,7 @@ class TimerApp(Gtk.Box):
 		self.del_btn = Gtk.Button()
 		self.del_btn.connect("clicked", self.terminate)
 		self.del_btn.get_style_context().add_class("delete_button")
-		self.del_btn.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/the_x.png"))
+		self.del_btn.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/the_x.png"))
 
 		self.del_btn.set_halign(Gtk.Align.END)
 		self.del_btn.set_valign(Gtk.Align.START)
@@ -205,7 +208,7 @@ class TimerApp(Gtk.Box):
 		self.on_load()
 
 	def on_load(self):
-		self.button.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/play.png"))
+		self.button.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/play.png"))
 		if self.remaining < 0:
 			self.on_restart_clicked(None)
 		else:
@@ -255,13 +258,13 @@ class TimerApp(Gtk.Box):
 			self.toggle_arrows(True)
 
 		if self.paused == False: 
-			self.button.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/play.png"))
+			self.button.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/play.png"))
 			self.paused = True
 			if self.timer_id and self.remaining > 0:
 				GLib.source_remove(self.timer_id)
 				self.timer_id = None
 		else:
-			self.button.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/pause.png"))
+			self.button.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/pause.png"))
 			self.paused = False
 			self.compute_time(False)
 
@@ -276,7 +279,7 @@ class TimerApp(Gtk.Box):
 	def on_restart_clicked(self, button):
 		if self.sound_mixer: self.sound_mixer.stop()
 		if self.started == True:
-			self.button.set_image(Gtk.Image.new_from_file(f"{APP_DIR}/gfx/play.png"))
+			self.button.set_image(Gtk.Image.new_from_file(f"{ASSETS_DIR}/gfx/play.png"))
 			if self.timer_id and self.remaining > 0:
 				GLib.source_remove(self.timer_id)
 				self.timer_id = None
@@ -358,7 +361,7 @@ class TimerApp(Gtk.Box):
 		if self.paused == False: self.check_font_size()
 
 	def play_alarm(self):
-		sound = mixer.Sound(f"{APP_DIR}/ralsei-splat.mp3")
+		sound = mixer.Sound(f"{ASSETS_DIR}/ralsei-splat.mp3")
 		self.sound_mixer = sound.play(loops=-1)
 
 	def adjust_time(self, button, unit, amount):
@@ -476,7 +479,7 @@ class MainApp(Gtk.Window):
 
 		# importing css
 		css_provider = Gtk.CssProvider()
-		css_provider.load_from_path(f"{APP_DIR}/style.css")
+		css_provider.load_from_path(f"{ASSETS_DIR}/style.css")
 
 		Gtk.StyleContext.add_provider_for_screen(
 			Gdk.Screen.get_default(),
