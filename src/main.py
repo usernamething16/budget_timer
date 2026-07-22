@@ -16,7 +16,7 @@ if getattr(sys, 'frozen', False):
 	# bundled read-only files (style.css, sounds, etc.)
 	ASSETS_DIR = os.path.join(sys._MEIPASS, "assets")
 	# writable data (save file) lives next to the exe
-	DATA_DIR = os.path.join(BASE_DIR, "data")
+	DATA_DIR = os.path.join(GLib.get_user_data_dir(), "simple-timer")
 else:
 	# running from source (vscode)
 	BASE_DIR = os.path.dirname(os.path.abspath(__file__))
