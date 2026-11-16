@@ -361,7 +361,7 @@ class TimerApp(Gtk.Box):
 		if self.paused == False: self.check_font_size()
 
 	def play_alarm(self):
-		sound = mixer.Sound(f"{ASSETS_DIR}/ralsei-splat.mp3")
+		sound = mixer.Sound(f"{ASSETS_DIR}/bell.mp3")
 		self.sound_mixer = sound.play(loops=-1)
 
 	def adjust_time(self, button, unit, amount):
