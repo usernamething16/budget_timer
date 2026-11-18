@@ -19,3 +19,7 @@ python3 src/main.py
 ```
 
 When run from source, timers are saved to `src/save_file.json`.
+
+## Installing
+
+Download the latest `.deb` from [Releases](https://github.com/usernamething16/ring-timer/releases) and install it
